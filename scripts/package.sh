@@ -362,17 +362,34 @@ if cargo build --release --target x86_64-pc-windows-gnu 2>&1; then
     
     # Copy GTK4 DLLs and dependencies
     echo -e "${YELLOW}Copying GTK4 DLLs and dependencies...${NC}"
-    if [ -d "$GTK_WIN_DIR/gtk/bin" ]; then
-        cp "$GTK_WIN_DIR/gtk/bin/"*.dll "$WIN_DIR/" 2>/dev/null || true
+    if [ -d "$GTK_WIN_DIR/bin" ]; then
+        # Copy all DLL files (excluding .pdb debug files)
+        cp "$GTK_WIN_DIR/bin/"*.dll "$WIN_DIR/" 2>/dev/null || true
         echo -e "${GREEN}✓ Copied GTK4 runtime DLLs${NC}"
+        
+        # Verify critical DLLs are present
+        CRITICAL_DLLS=("gdk_pixbuf-2.0-0.dll" "cairo-2.dll" "gio-2.0-0.dll" "glib-2.0-0.dll" "gtk-4-1.dll")
+        MISSING_DLLS=()
+        for dll in "${CRITICAL_DLLS[@]}"; do
+            if [ ! -f "$WIN_DIR/$dll" ]; then
+                MISSING_DLLS+=("$dll")
+            fi
+        done
+        
+        if [ ${#MISSING_DLLS[@]} -gt 0 ]; then
+            echo -e "${RED}✗ Missing critical DLLs: ${MISSING_DLLS[*]}${NC}"
+            echo -e "${YELLOW}Check GTK4 Windows installation${NC}"
+        else
+            echo -e "${GREEN}✓ All critical DLLs present${NC}"
+        fi
     fi
     
     # Copy GTK4 data files (themes, icons, etc.)
-    if [ -d "$GTK_WIN_DIR/gtk/share" ]; then
+    if [ -d "$GTK_WIN_DIR/share" ]; then
         mkdir -p "$WIN_DIR/share"
-        cp -r "$GTK_WIN_DIR/gtk/share/glib-2.0" "$WIN_DIR/share/" 2>/dev/null || true
-        cp -r "$GTK_WIN_DIR/gtk/share/icons" "$WIN_DIR/share/" 2>/dev/null || true
-        cp -r "$GTK_WIN_DIR/gtk/share/themes" "$WIN_DIR/share/" 2>/dev/null || true
+        cp -r "$GTK_WIN_DIR/share/glib-2.0" "$WIN_DIR/share/" 2>/dev/null || true
+        cp -r "$GTK_WIN_DIR/share/icons" "$WIN_DIR/share/" 2>/dev/null || true
+        cp -r "$GTK_WIN_DIR/share/themes" "$WIN_DIR/share/" 2>/dev/null || true
         echo -e "${GREEN}✓ Copied GTK4 data files${NC}"
     fi
     
@@ -454,13 +471,27 @@ Section "MainSection" SEC01
     File "README.txt"
     File /nonfatal "icon.png"
     File /nonfatal "icon.ico"
+    
+    ; Install all GTK4 DLLs
+    File "*.dll"
+    
+    ; Install GTK4 data files
+    SetOutPath "$INSTDIR\share"
+    File /r /x "*.pdb" "share\*.*"
 SectionEnd
 
 Section -AdditionalIcons
     ${INSTALL_TYPE}
+    SetOutPath "$INSTDIR"
     CreateDirectory "$SMPROGRAMS\${APP_NAME}"
-    CreateShortCut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${MAIN_APP_EXE}"
-    CreateShortCut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${MAIN_APP_EXE}"
+    
+    ; Create Start Menu shortcut with icon
+    CreateShortCut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${MAIN_APP_EXE}" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL "" "Personnel Management Application"
+    
+    ; Create Desktop shortcut with icon
+    CreateShortCut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${MAIN_APP_EXE}" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL "" "Personnel Management Application"
+    
+    ; Create Uninstall shortcut
     CreateShortCut "$SMPROGRAMS\${APP_NAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
@@ -484,8 +515,13 @@ Section Uninstall
     Delete "$INSTDIR\README.txt"
     Delete "$INSTDIR\icon.png"
     Delete "$INSTDIR\icon.ico"
+    Delete "$INSTDIR\*.dll"
     Delete "$INSTDIR\uninstall.exe"
     
+    ; Remove GTK4 data files
+    RMDir /r "$INSTDIR\share"
+    
+    ; Remove shortcuts
     Delete "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk"
     Delete "$SMPROGRAMS\${APP_NAME}\Uninstall.lnk"
     Delete "$DESKTOP\${APP_NAME}.lnk"

@@ -48,11 +48,13 @@ pub fn build<W: IsA<gtk::Window>>(api: ApiClient, window: W) -> GtkBox {
     let api_clone = api.clone();
     let list_box_clone = list_box.clone();
     let window_clone = window.clone();
+    let refresh_btn_clone = refresh_btn.clone();
 
     let load_employees = Rc::new(move || {
         let api = api_clone.clone();
         let list_box = list_box_clone.clone();
         let window_inner = window_clone.clone();
+        let refresh_btn_inner = refresh_btn_clone.clone();
         
         glib::MainContext::default().spawn_local(async move {
             // Fetch employees, departments, and salary grades to show relationships
@@ -107,105 +109,41 @@ pub fn build<W: IsA<gtk::Window>>(api: ApiClient, window: W) -> GtkBox {
                         info_box.append(&grade_label);
                         info_box.set_hexpand(true);
 
-                        let assign_grade_btn = Button::with_label("Assign Grade");
+                        // Button container with vertical orientation
+                        let button_box = GtkBox::new(Orientation::Vertical, 8);
                         let edit_btn = Button::with_label("Edit");
                         let delete_btn = Button::with_label("Delete");
+                        button_box.append(&edit_btn);
+                        button_box.append(&delete_btn);
 
                         row_container.append(&info_box);
-                        row_container.append(&assign_grade_btn);
-                        row_container.append(&edit_btn);
-                        row_container.append(&delete_btn);
+                        row_container.append(&button_box);
                         
                         list_box.append(&row_container);
-
-                        // Assign/Change Salary Grade button
-                        let emp_id = emp.id.clone();
-                        let api_assign = api.clone();
-                        let window_assign = window_inner.clone();
-                        let grades_clone = grades.clone();
-                        assign_grade_btn.connect_clicked(move |_| {
-                            let id = emp_id.clone();
-                            let api_inner = api_assign.clone();
-                            let grades_inner = grades_clone.clone();
-                            let window_dialog = window_assign.clone();
-                            
-                            // Show dialog to select salary grade
-                            let dialog = gtk::Dialog::builder()
-                                .transient_for(&window_dialog)
-                                .modal(true)
-                                .title("Assign Salary Grade")
-                                .build();
-                            
-                            dialog.add_button("Cancel", gtk::ResponseType::Cancel);
-                            dialog.add_button("Assign", gtk::ResponseType::Accept);
-                            
-                            let content = dialog.content_area();
-                            let vbox = GtkBox::new(Orientation::Vertical, 12);
-                            vbox.set_margin_top(12);
-                            vbox.set_margin_bottom(12);
-                            vbox.set_margin_start(12);
-                            vbox.set_margin_end(12);
-                            
-                            vbox.append(&Label::builder()
-                                .label("Select Salary Grade:")
-                                .halign(Align::Start)
-                                .build());
-                            
-                            let list_box_grades = ListBox::new();
-                            list_box_grades.set_selection_mode(gtk::SelectionMode::Single);
-                            
-                            for grade in &grades_inner {
-                                let row_label = Label::new(Some(&format!("{} - ${:.2}", grade.code, grade.base_salary)));
-                                row_label.set_halign(Align::Start);
-                                list_box_grades.append(&row_label);
-                            }
-                            
-                            let scrolled = ScrolledWindow::builder()
-                                .child(&list_box_grades)
-                                .min_content_height(200)
-                                .build();
-                            vbox.append(&scrolled);
-                            content.append(&vbox);
-                            
-                            dialog.connect_response(move |dialog, response| {
-                                if response == gtk::ResponseType::Accept {
-                                    if let Some(selected_row) = list_box_grades.selected_row() {
-                                        let index = selected_row.index() as usize;
-                                        if let Some(selected_grade) = grades_inner.get(index) {
-                                            let grade_id = selected_grade.id.clone();
-                                            let api_save = api_inner.clone();
-                                            let emp_id_save = id.clone();
-                                            
-                                            glib::MainContext::default().spawn_local(async move {
-                                                let req = crate::api::models::AssignSalaryGradeRequest {
-                                                    salary_grade_id: grade_id,
-                                                };
-                                                if let Err(e) = api_save.assign_salary_grade(&emp_id_save, &req).await {
-                                                    eprintln!("Error assigning salary grade: {}", e);
-                                                }
-                                            });
-                                        }
-                                    }
-                                }
-                                dialog.close();
-                            });
-                            
-                            dialog.present();
-                        });
 
                         // Edit button
                         let emp_clone = emp.clone();
                         let api_edit = api.clone();
                         let window_edit = window_inner.clone();
+                        let departments_clone = departments.clone();
+                        let grades_edit = grades.clone();
+                        let refresh_for_edit = refresh_btn_inner.clone();
                         edit_btn.connect_clicked(move |_| {
                             let emp_inner = emp_clone.clone();
                             let api_inner = api_edit.clone();
+                            let depts = departments_clone.clone();
+                            let salary_grades = grades_edit.clone();
+                            let refresh_btn_edit = refresh_for_edit.clone();
                             
-                            employee_dialog::show_edit_dialog(&window_edit, &emp_inner, move |id, req| {
+                            employee_dialog::show_edit_dialog(&window_edit, &emp_inner, depts, salary_grades, move |id, req| {
                                 let api_save = api_inner.clone();
+                                let refresh_btn_save = refresh_btn_edit.clone();
                                 glib::MainContext::default().spawn_local(async move {
                                     if let Err(e) = api_save.update_employee(&id, &req).await {
                                         eprintln!("Error updating employee: {}", e);
+                                    } else {
+                                        // Trigger refresh by clicking the refresh button
+                                        refresh_btn_save.emit_clicked();
                                     }
                                 });
                             });

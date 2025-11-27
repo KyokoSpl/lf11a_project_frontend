@@ -15,15 +15,35 @@ async fn main() {
         .build();
 
     app.connect_activate(|app| {
-        // Load CSS
+        // Load CSS from multiple possible locations
         let provider = CssProvider::new();
-        provider.load_from_path("assets/style.css");
+        let css_paths = vec![
+            "assets/style.css",                                      // Development (source directory)
+            "style.css",                                             // Current directory (portable)
+            "/usr/share/lf11a-project-frontend/style.css",          // Linux system install
+        ];
         
-        gtk::style_context_add_provider_for_display(
-            &Display::default().expect("Could not connect to a display."),
-            &provider,
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );
+        let mut css_loaded = false;
+        for path in css_paths {
+            if std::path::Path::new(path).exists() {
+                provider.load_from_path(path);
+                css_loaded = true;
+                eprintln!("Loaded CSS from: {}", path);
+                break;
+            }
+        }
+        
+        if !css_loaded {
+            eprintln!("Warning: Could not load CSS file from any location. Using default styles.");
+        }
+        
+        if css_loaded {
+            gtk::style_context_add_provider_for_display(
+                &Display::default().expect("Could not connect to a display."),
+                &provider,
+                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            );
+        }
         
         gui::main_window::build(app);
     });
