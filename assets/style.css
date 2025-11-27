@@ -1,0 +1,176 @@
+/* Modern Material Design-inspired layout - uses GTK default colors */
+
+/* Smoother transitions for everything */
+* {
+    transition: all 150ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Notebook tabs - elevated and rounded */
+notebook {
+    background: transparent;
+}
+
+notebook > header {
+    padding: 8px 16px 0 16px;
+    background: transparent;
+}
+
+notebook > header > tabs {
+    background: transparent;
+}
+
+notebook > header > tabs > tab {
+    padding: 12px 24px;
+    margin: 0 4px;
+    border-radius: 12px 12px 0 0;
+    font-weight: 500;
+    border: none;
+}
+
+notebook > header > tabs > tab:checked {
+    font-weight: 600;
+}
+
+/* Content area with card-like appearance */
+notebook > stack {
+    background: transparent;
+}
+
+/* List boxes - card style with elevation */
+list,
+listbox {
+    border-radius: 16px;
+    border: 1px solid alpha(currentColor, 0.12);
+    background: transparent;
+}
+
+list > row,
+listbox > row {
+    padding: 20px 24px;
+    border-bottom: 1px solid alpha(currentColor, 0.08);
+    border-radius: 0;
+    min-height: 48px;
+}
+
+list > row:first-child,
+listbox > row:first-child {
+    border-radius: 16px 16px 0 0;
+}
+
+list > row:last-child,
+listbox > row:last-child {
+    border-bottom: none;
+    border-radius: 0 0 16px 16px;
+}
+
+list > row:first-child:last-child,
+listbox > row:first-child:last-child {
+    border-radius: 16px;
+}
+
+/* Buttons - Material Design style */
+button {
+    padding: 10px 24px;
+    margin: 4px;
+    border-radius: 8px;
+    font-weight: 500;
+    min-height: 36px;
+    border: none;
+    box-shadow: 0 1px 3px alpha(black, 0.12), 0 1px 2px alpha(black, 0.24);
+}
+
+button:hover {
+    box-shadow: 0 3px 6px alpha(black, 0.16), 0 3px 6px alpha(black, 0.23);
+}
+
+button:active {
+    box-shadow: 0 1px 2px alpha(black, 0.12);
+}
+
+button.suggested-action,
+button.destructive-action {
+    font-weight: 600;
+}
+
+/* Typography hierarchy */
+label.title-1 {
+    font-size: 1.75em;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+}
+
+label.title-2 {
+    font-size: 1.25em;
+    font-weight: 500;
+    letter-spacing: 0.25px;
+}
+
+label.heading {
+    font-weight: 500;
+    letter-spacing: 0.15px;
+}
+
+label.caption {
+    opacity: 0.6;
+    font-size: 0.875em;
+    letter-spacing: 0.4px;
+}
+
+label.accent {
+    font-weight: 600;
+}
+
+/* Entry fields - Material Design input style */
+entry {
+    padding: 12px 16px;
+    border-radius: 8px;
+    min-height: 40px;
+    border: 1px solid alpha(currentColor, 0.12);
+}
+
+entry:focus {
+    border-width: 2px;
+    box-shadow: 0 0 0 3px alpha(currentColor, 0.08);
+}
+
+/* Toolbar - elevated card style */
+box.toolbar {
+    padding: 16px 20px;
+    border-radius: 16px 16px 0 0;
+    margin-bottom: 8px;
+}
+
+/* Scrolled windows */
+scrolledwindow {
+    border-radius: 16px;
+}
+
+scrolledwindow > child {
+    border-radius: 16px;
+}
+
+/* Dialog - elevated with rounded corners */
+dialog {
+    border-radius: 16px;
+    box-shadow: 0 11px 15px alpha(black, 0.2), 0 9px 46px alpha(black, 0.12), 0 24px 38px alpha(black, 0.14);
+}
+
+dialog > box {
+    padding: 16px;
+}
+
+/* Message dialog */
+messagedialog {
+    border-radius: 16px;
+}
+
+messagedialog .dialog-vbox {
+    padding: 24px;
+}
+
+/* Separator - subtle */
+separator {
+    min-height: 1px;
+    min-width: 1px;
+    background: alpha(currentColor, 0.12);
+}

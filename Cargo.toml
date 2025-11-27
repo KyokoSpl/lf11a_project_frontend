@@ -1,0 +1,29 @@
+[package]
+name = "lf11a_project_frontend"
+version = "0.1.0"
+edition = "2021"
+authors = ["kyoko"]
+description = "A modern GTK4-based personnel management application"
+license = "MIT"
+repository = "https://github.com/KyokoSpl/lf11a_project_frontend"
+homepage = "https://github.com/KyokoSpl/lf11a_project_frontend"
+keywords = ["gtk", "personnel", "management", "database"]
+categories = ["gui"]
+
+[lib]
+name = "lf11a_project_frontend"
+path = "src/mod.rs"
+
+[[bin]]
+name = "lf11a_project_frontend"
+path = "src/main.rs"
+
+[dependencies]
+gtk = { version = "0.10.2", package = "gtk4" }
+reqwest = { version = "0.12.24", features = ["json"] }
+serde = { version = "1.0.228", features = ["derive"] }
+tokio = { version = "1.48.0", features = ["full"] }
+dotenvy = "0.15"
+
+[dev-dependencies]
+serde_json = "1.0.145"
