@@ -68,8 +68,8 @@ fi
 # Copy CSS file
 cp assets/style.css "$DEB_DIR/usr/share/$APP_NAME/" 2>/dev/null || true
 
-# Copy .env.example
-cp .env.example "$DEB_DIR/usr/share/$APP_NAME/" 2>/dev/null || true
+# Copy .env file with backend configuration
+cp .env "$DEB_DIR/usr/share/$APP_NAME/" 2>/dev/null || cp .env.example "$DEB_DIR/usr/share/$APP_NAME/.env" 2>/dev/null || true
 
 # Create desktop entry
 cat > "$DEB_DIR/usr/share/applications/$APP_NAME.desktop" << EOF
@@ -153,6 +153,7 @@ mkdir -p %{buildroot}%{_datadir}/%{name}
 install -m 755 lf11a_project_frontend %{buildroot}%{_bindir}/%{name}
 install -m 644 icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/%{name}.png || true
 install -m 644 style.css %{buildroot}%{_datadir}/%{name}/style.css || true
+install -m 644 .env %{buildroot}%{_datadir}/%{name}/.env 2>/dev/null || install -m 644 .env.example %{buildroot}%{_datadir}/%{name}/.env 2>/dev/null || true
 
 cat > %{buildroot}%{_datadir}/applications/%{name}.desktop << DESKTOP
 [Desktop Entry]
@@ -171,6 +172,7 @@ DESKTOP
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/512x512/apps/%{name}.png
 %{_datadir}/%{name}/style.css
+%{_datadir}/%{name}/.env
 
 %changelog
 * Wed Nov 27 2024 kyoko <kyoko@example.com> - 0.1.0-1
@@ -251,7 +253,7 @@ chmod +x "$APPIMAGE_DIR/usr/bin/$APP_NAME"
 
 # Copy resources
 cp assets/style.css "$APPIMAGE_DIR/usr/share/$APP_NAME/" 2>/dev/null || true
-cp .env.example "$APPIMAGE_DIR/usr/share/$APP_NAME/" 2>/dev/null || true
+cp .env "$APPIMAGE_DIR/usr/share/$APP_NAME/" 2>/dev/null || cp .env.example "$APPIMAGE_DIR/usr/share/$APP_NAME/.env" 2>/dev/null || true
 
 if [ -f "$BUILD_DIR/icon.png" ]; then
     cp "$BUILD_DIR/icon.png" "$APPIMAGE_DIR/usr/share/icons/hicolor/512x512/apps/$APP_NAME.png"
@@ -358,7 +360,7 @@ if cargo build --release --target x86_64-pc-windows-gnu 2>&1; then
     
     cp "target/x86_64-pc-windows-gnu/release/lf11a_project_frontend.exe" "$WIN_DIR/${APP_NAME}.exe"
     cp assets/style.css "$WIN_DIR/" 2>/dev/null || true
-    cp .env.example "$WIN_DIR/" 2>/dev/null || true
+    cp .env "$WIN_DIR/" 2>/dev/null || cp .env.example "$WIN_DIR/.env" 2>/dev/null || true
     
     # Copy GTK4 DLLs and dependencies
     echo -e "${YELLOW}Copying GTK4 DLLs and dependencies...${NC}"
@@ -467,7 +469,7 @@ Section "MainSection" SEC01
     SetOverwrite ifnewer
     File "lf11a-project-frontend.exe"
     File "style.css"
-    File ".env.example"
+    File ".env"
     File "README.txt"
     File /nonfatal "icon.png"
     File /nonfatal "icon.ico"
