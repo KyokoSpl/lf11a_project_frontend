@@ -285,23 +285,48 @@ pub fn build<W: IsA<gtk::Window>>(api: ApiClient, window: W) -> GtkBox {
 
                         // Delete button handler
                         let dept_id = dept.id.clone();
+                        let dept_name = dept.name.clone();
                         let api_delete = api.clone();
                         let refresh_delete = refresh_fn_inner.clone();
+                        let window_delete = window_inner.clone();
                         delete_btn.connect_clicked(move |_| {
                             let id = dept_id.clone();
+                            let name = dept_name.clone();
                             let api_del = api_delete.clone();
                             let refresh_del = refresh_delete.clone();
+                            let window_del = window_delete.clone();
                             
-                            glib::MainContext::default().spawn_local(async move {
-                                if let Err(e) = api_del.delete_department(&id).await {
-                                    crate::log_error!("Error deleting department: {}", e);
-                                } else {
-                                    // Reload list with full details
-                                    if let Some(ref refresh) = *refresh_del.borrow() {
-                                        refresh();
-                                    }
+                            // Show confirmation dialog
+                            let dialog = MessageDialog::builder()
+                                .transient_for(&window_del)
+                                .modal(true)
+                                .buttons(ButtonsType::YesNo)
+                                .message_type(MessageType::Warning)
+                                .text(&format!("Delete Department '{}'?", name))
+                                .secondary_text("This action cannot be undone. All employees in this department will be unassigned from it. The department head will lose their role.")
+                                .build();
+                            
+                            dialog.connect_response(move |dialog, response| {
+                                if response == gtk::ResponseType::Yes {
+                                    let id_inner = id.clone();
+                                    let api_inner = api_del.clone();
+                                    let refresh_inner = refresh_del.clone();
+                                    
+                                    glib::MainContext::default().spawn_local(async move {
+                                        if let Err(e) = api_inner.delete_department(&id_inner).await {
+                                            crate::log_error!("Error deleting department: {}", e);
+                                        } else {
+                                            // Reload list with full details
+                                            if let Some(ref refresh) = *refresh_inner.borrow() {
+                                                refresh();
+                                            }
+                                        }
+                                    });
                                 }
+                                dialog.close();
                             });
+                            
+                            dialog.present();
                         });
                     }
                 }

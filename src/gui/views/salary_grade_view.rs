@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Orientation, Label, Button, ListBox, ScrolledWindow, PolicyType, Align, glib};
+use gtk::{Box as GtkBox, Orientation, Label, Button, ListBox, ScrolledWindow, PolicyType, Align, glib, MessageDialog, ButtonsType, MessageType};
 use std::rc::Rc;
 use crate::api::client::ApiClient;
 use crate::gui::dialogs::salary_grade_dialog;
@@ -48,11 +48,13 @@ pub fn build<W: IsA<gtk::Window>>(api: ApiClient, window: W) -> GtkBox {
     let api_clone = api.clone();
     let list_box_clone = list_box.clone();
     let window_clone = window.clone();
+    let refresh_btn_clone = refresh_btn.clone();
 
     let load_grades = Rc::new(move || {
         let api = api_clone.clone();
         let list_box = list_box_clone.clone();
         let window_inner = window_clone.clone();
+        let refresh_btn_inner = refresh_btn_clone.clone();
         
         glib::MainContext::default().spawn_local(async move {
             // Fetch both grades and employees to show relationships
@@ -155,16 +157,45 @@ pub fn build<W: IsA<gtk::Window>>(api: ApiClient, window: W) -> GtkBox {
 
                         // Delete button
                         let grade_id = grade.id.clone();
+                        let grade_code = grade.code.clone();
                         let api_delete = api.clone();
+                        let window_delete = window_inner.clone();
+                        let refresh_for_delete = refresh_btn_inner.clone();
                         delete_btn.connect_clicked(move |_| {
                             let id = grade_id.clone();
+                            let code = grade_code.clone();
                             let api_del = api_delete.clone();
+                            let window_del = window_delete.clone();
+                            let refresh_btn_del = refresh_for_delete.clone();
                             
-                            glib::MainContext::default().spawn_local(async move {
-                                if let Err(e) = api_del.delete_salary_grade(&id).await {
-                                    eprintln!("Error deleting salary grade: {}", e);
+                            // Show confirmation dialog
+                            let dialog = MessageDialog::builder()
+                                .transient_for(&window_del)
+                                .modal(true)
+                                .buttons(ButtonsType::YesNo)
+                                .message_type(MessageType::Warning)
+                                .text(&format!("Delete Salary Grade '{}'?", code))
+                                .secondary_text("This action cannot be undone. Employees assigned to this salary grade will no longer have a grade assigned.")
+                                .build();
+                            
+                            dialog.connect_response(move |dialog, response| {
+                                if response == gtk::ResponseType::Yes {
+                                    let id_inner = id.clone();
+                                    let api_inner = api_del.clone();
+                                    let refresh_inner = refresh_btn_del.clone();
+                                    
+                                    glib::MainContext::default().spawn_local(async move {
+                                        if let Err(e) = api_inner.delete_salary_grade(&id_inner).await {
+                                            eprintln!("Error deleting salary grade: {}", e);
+                                        } else {
+                                            refresh_inner.emit_clicked();
+                                        }
+                                    });
                                 }
+                                dialog.close();
                             });
+                            
+                            dialog.present();
                         });
                     }
                 }

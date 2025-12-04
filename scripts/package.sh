@@ -5,14 +5,219 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 APP_NAME="lf11a-project-frontend"
-APP_VERSION="0.1.0"
 APP_DESCRIPTION="LF11A Project Frontend - GTK4 Personnel Management Application"
 AUTHOR="kyoko"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
+RELEASES_DIR="$PROJECT_ROOT/releases"
+
+# Extract version from Cargo.toml
+APP_VERSION=$(grep '^version' "$PROJECT_ROOT/Cargo.toml" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+echo -e "${BLUE}Detected version: ${APP_VERSION}${NC}"
+
+# Function to show usage
+show_usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --release    Build all packages and create a GitHub release"
+    echo "  --help       Show this help message"
+    echo ""
+    echo "Without options, builds all packages for Linux and Windows."
+}
+
+# Function to create GitHub release
+create_github_release() {
+    echo -e "${GREEN}=== Creating GitHub Release v${APP_VERSION} ===${NC}"
+    
+    # Check if gh CLI is installed
+    if ! command -v gh &> /dev/null; then
+        echo -e "${RED}Error: GitHub CLI (gh) is not installed.${NC}"
+        echo -e "Install it with: sudo dnf install gh  (Fedora)"
+        echo -e "                 sudo apt install gh  (Debian/Ubuntu)"
+        echo -e "Then authenticate with: gh auth login"
+        exit 1
+    fi
+    
+    # Check if authenticated
+    if ! gh auth status &> /dev/null; then
+        echo -e "${RED}Error: Not authenticated with GitHub CLI.${NC}"
+        echo -e "Run: gh auth login"
+        exit 1
+    fi
+    
+    # Create releases directory
+    mkdir -p "$RELEASES_DIR"
+    
+    # Copy all packages to releases directory
+    echo -e "${YELLOW}Collecting release artifacts...${NC}"
+    
+    # Copy DEB package
+    if [ -f "$BUILD_DIR/${APP_NAME}_${APP_VERSION}_amd64.deb" ]; then
+        cp "$BUILD_DIR/${APP_NAME}_${APP_VERSION}_amd64.deb" "$RELEASES_DIR/"
+        echo -e "${GREEN}✓${NC} DEB package"
+    fi
+    
+    # Copy RPM package
+    if [ -f "$HOME/rpmbuild/RPMS/x86_64/${APP_NAME}-${APP_VERSION}-1.x86_64.rpm" ]; then
+        cp "$HOME/rpmbuild/RPMS/x86_64/${APP_NAME}-${APP_VERSION}-1.x86_64.rpm" "$RELEASES_DIR/"
+        echo -e "${GREEN}✓${NC} RPM package"
+    fi
+    
+    # Copy AppImage
+    if [ -f "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-x86_64.AppImage" ]; then
+        cp "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-x86_64.AppImage" "$RELEASES_DIR/"
+        echo -e "${GREEN}✓${NC} AppImage"
+    fi
+    
+    # Copy Windows installer
+    if [ -f "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-setup.exe" ]; then
+        cp "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-setup.exe" "$RELEASES_DIR/"
+        echo -e "${GREEN}✓${NC} Windows installer"
+    fi
+    
+    # Copy Arch PKGBUILD
+    if [ -f "$BUILD_DIR/arch/PKGBUILD" ]; then
+        cp "$BUILD_DIR/arch/PKGBUILD" "$RELEASES_DIR/"
+        echo -e "${GREEN}✓${NC} Arch PKGBUILD"
+    fi
+    
+    # Generate release notes from recent commits
+    echo -e "${YELLOW}Generating release notes...${NC}"
+    
+    RELEASE_NOTES_FILE="$RELEASES_DIR/RELEASE_NOTES.md"
+    
+    # Get the last tag or use initial commit if no tags
+    LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+    
+    cat > "$RELEASE_NOTES_FILE" << EOF
+# LF11A Project Frontend v${APP_VERSION}
+
+## What's New
+
+EOF
+    
+    # Add commits since last tag (or last 20 commits if no tag)
+    if [ -n "$LAST_TAG" ]; then
+        echo "### Changes since ${LAST_TAG}" >> "$RELEASE_NOTES_FILE"
+        echo "" >> "$RELEASE_NOTES_FILE"
+        git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges >> "$RELEASE_NOTES_FILE" 2>/dev/null || true
+    else
+        echo "### Recent Changes" >> "$RELEASE_NOTES_FILE"
+        echo "" >> "$RELEASE_NOTES_FILE"
+        git log -20 --pretty=format:"- %s" --no-merges >> "$RELEASE_NOTES_FILE" 2>/dev/null || true
+    fi
+    
+    cat >> "$RELEASE_NOTES_FILE" << EOF
+
+
+## Downloads
+
+| Platform | Package | Description |
+|----------|---------|-------------|
+| Debian/Ubuntu | \`${APP_NAME}_${APP_VERSION}_amd64.deb\` | Install with \`sudo dpkg -i\` |
+| Fedora/RHEL | \`${APP_NAME}-${APP_VERSION}-1.x86_64.rpm\` | Install with \`sudo rpm -i\` |
+| Linux (Universal) | \`${APP_NAME}-${APP_VERSION}-x86_64.AppImage\` | Make executable and run |
+| Windows | \`${APP_NAME}-${APP_VERSION}-setup.exe\` | Run the installer |
+| Arch Linux | \`PKGBUILD\` | Build with \`makepkg -si\` |
+
+## System Requirements
+
+- **Linux**: GTK4 4.6+, glib 2.66+
+- **Windows**: Windows 10/11 (GTK4 bundled with installer)
+
+## Installation
+
+### Linux (DEB)
+\`\`\`bash
+sudo dpkg -i ${APP_NAME}_${APP_VERSION}_amd64.deb
+sudo apt-get install -f  # Install dependencies if needed
+\`\`\`
+
+### Linux (RPM)
+\`\`\`bash
+sudo rpm -i ${APP_NAME}-${APP_VERSION}-1.x86_64.rpm
+\`\`\`
+
+### Linux (AppImage)
+\`\`\`bash
+chmod +x ${APP_NAME}-${APP_VERSION}-x86_64.AppImage
+./${APP_NAME}-${APP_VERSION}-x86_64.AppImage
+\`\`\`
+
+### Windows
+Run the installer and follow the prompts. Desktop and Start Menu shortcuts will be created.
+EOF
+    
+    echo -e "${GREEN}Release notes generated: ${RELEASE_NOTES_FILE}${NC}"
+    
+    # Generate SHA256 checksums
+    echo -e "${YELLOW}Generating checksums...${NC}"
+    cd "$RELEASES_DIR"
+    sha256sum *.deb *.rpm *.AppImage *.exe PKGBUILD 2>/dev/null > SHA256SUMS.txt || true
+    cd "$PROJECT_ROOT"
+    echo -e "${GREEN}✓${NC} SHA256SUMS.txt generated"
+    
+    # List files to be uploaded
+    echo -e "${YELLOW}Files to be released:${NC}"
+    ls -lh "$RELEASES_DIR"
+    
+    # Ask for confirmation
+    echo ""
+    echo -e "${YELLOW}Ready to create GitHub release v${APP_VERSION}${NC}"
+    read -p "Do you want to proceed? (y/N) " -n 1 -r
+    echo
+    
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}Release cancelled.${NC}"
+        exit 0
+    fi
+    
+    # Create the GitHub release
+    echo -e "${GREEN}Creating GitHub release...${NC}"
+    
+    # Collect all release files
+    RELEASE_FILES=()
+    for file in "$RELEASES_DIR"/*.deb "$RELEASES_DIR"/*.rpm "$RELEASES_DIR"/*.AppImage "$RELEASES_DIR"/*.exe "$RELEASES_DIR"/PKGBUILD "$RELEASES_DIR"/SHA256SUMS.txt; do
+        if [ -f "$file" ]; then
+            RELEASE_FILES+=("$file")
+        fi
+    done
+    
+    # Create release with gh CLI
+    gh release create "v${APP_VERSION}" \
+        --title "LF11A Project Frontend v${APP_VERSION}" \
+        --notes-file "$RELEASE_NOTES_FILE" \
+        "${RELEASE_FILES[@]}"
+    
+    echo -e "${GREEN}=== GitHub Release v${APP_VERSION} created successfully! ===${NC}"
+    echo -e "View at: https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner)/releases/tag/v${APP_VERSION}"
+}
+
+# Parse command line arguments
+RELEASE_MODE=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --release)
+            RELEASE_MODE=true
+            shift
+            ;;
+        --help|-h)
+            show_usage
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            show_usage
+            exit 1
+            ;;
+    esac
+done
 
 echo -e "${GREEN}=== Building LF11A Project Frontend Packages ===${NC}"
 
@@ -623,3 +828,8 @@ fi
 echo -e "${YELLOW}Note:${NC} Packages are ready for distribution."
 echo -e "      Do NOT run this script with sudo - it only creates packages."
 echo ""
+
+# If release mode, create GitHub release
+if [ "$RELEASE_MODE" = true ]; then
+    create_github_release
+fi

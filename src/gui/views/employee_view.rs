@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Orientation, Label, Button, ListBox, ScrolledWindow, PolicyType, Align, glib};
+use gtk::{Box as GtkBox, Orientation, Label, Button, ListBox, ScrolledWindow, PolicyType, Align, glib, MessageDialog, ButtonsType, MessageType};
 use std::rc::Rc;
 use crate::api::client::ApiClient;
 use crate::gui::dialogs::employee_dialog;
@@ -151,16 +151,45 @@ pub fn build<W: IsA<gtk::Window>>(api: ApiClient, window: W) -> GtkBox {
 
                         // Delete button
                         let emp_id = emp.id.clone();
+                        let emp_name = format!("{} {}", emp.first_name, emp.last_name);
                         let api_delete = api.clone();
+                        let window_delete = window_inner.clone();
+                        let refresh_for_delete = refresh_btn_inner.clone();
                         delete_btn.connect_clicked(move |_| {
                             let id = emp_id.clone();
+                            let name = emp_name.clone();
                             let api_del = api_delete.clone();
+                            let window_del = window_delete.clone();
+                            let refresh_btn_del = refresh_for_delete.clone();
                             
-                            glib::MainContext::default().spawn_local(async move {
-                                if let Err(e) = api_del.delete_employee(&id).await {
-                                    eprintln!("Error deleting employee: {}", e);
+                            // Show confirmation dialog
+                            let dialog = MessageDialog::builder()
+                                .transient_for(&window_del)
+                                .modal(true)
+                                .buttons(ButtonsType::YesNo)
+                                .message_type(MessageType::Warning)
+                                .text(&format!("Delete Employee '{}'?", name))
+                                .secondary_text("This action cannot be undone. The employee record will be permanently removed from the system.")
+                                .build();
+                            
+                            dialog.connect_response(move |dialog, response| {
+                                if response == gtk::ResponseType::Yes {
+                                    let id_inner = id.clone();
+                                    let api_inner = api_del.clone();
+                                    let refresh_inner = refresh_btn_del.clone();
+                                    
+                                    glib::MainContext::default().spawn_local(async move {
+                                        if let Err(e) = api_inner.delete_employee(&id_inner).await {
+                                            eprintln!("Error deleting employee: {}", e);
+                                        } else {
+                                            refresh_inner.emit_clicked();
+                                        }
+                                    });
                                 }
+                                dialog.close();
                             });
+                            
+                            dialog.present();
                         });
                     }
                 }
