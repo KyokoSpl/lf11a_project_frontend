@@ -279,7 +279,7 @@ cp .env "$DEB_DIR/usr/share/$APP_NAME/" 2>/dev/null || cp .env.example "$DEB_DIR
 # Create desktop entry
 cat > "$DEB_DIR/usr/share/applications/$APP_NAME.desktop" << EOF
 [Desktop Entry]
-Version=1.0
+Version=${APP_VERSION}
 Type=Application
 Name=LF11A Project Frontend
 Comment=$APP_DESCRIPTION
@@ -292,7 +292,7 @@ EOF
 # Create control file
 cat > "$DEB_DIR/DEBIAN/control" << EOF
 Package: $APP_NAME
-Version: $APP_VERSION
+Version: ${APP_VERSION}
 Section: utils
 Priority: optional
 Architecture: amd64
@@ -331,7 +331,7 @@ cat > "$RPM_BUILD_DIR/SPECS/${APP_NAME}.spec" << 'EOF'
 %global debug_package %{nil}
 
 Name:           lf11a-project-frontend
-Version:        0.1.0
+Version:        ${APP_VERSION}
 Release:        1%{?dist}
 Summary:        LF11A Project Frontend - Personnel Management Application
 
@@ -380,7 +380,7 @@ DESKTOP
 %{_datadir}/%{name}/.env
 
 %changelog
-* Wed Nov 27 2024 kyoko <kyoko@example.com> - 0.1.0-1
+* Wed Nov 27 2024 kyoko <kyoko@example.com> - ${APP_VERSION}-1
 - Initial package
 EOF
 
@@ -405,7 +405,7 @@ mkdir -p "$ARCH_DIR"
 cat > "$ARCH_DIR/PKGBUILD" << 'EOF'
 # Maintainer: kyoko <kyoko@example.com>
 pkgname=lf11a-project-frontend
-pkgver=0.1.0
+pkgver=${APP_VERSION}
 pkgrel=1
 pkgdesc="LF11A Project Frontend - Personnel Management Application"
 arch=('x86_64')
@@ -635,10 +635,10 @@ WINREADME
         cat > "$WIN_DIR/installer.nsi" << 'NSIS'
 !define APP_NAME "LF11A Project Frontend"
 !define COMP_NAME "kyoko"
-!define VERSION "0.1.0"
+!define VERSION "${APP_VERSION}"
 !define COPYRIGHT "kyoko © 2025"
 !define DESCRIPTION "Personnel Management Application"
-!define INSTALLER_NAME "lf11a-project-frontend-0.1.0-setup.exe"
+!define INSTALLER_NAME "lf11a-project-frontend-${APP_VERSION}-setup.exe"
 !define MAIN_APP_EXE "lf11a-project-frontend.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
 !define REG_ROOT "HKCU"
@@ -746,9 +746,9 @@ NSIS
         makensis installer.nsi
         cd - > /dev/null
         
-        if [ -f "$WIN_DIR/lf11a-project-frontend-0.1.0-setup.exe" ]; then
-            mv "$WIN_DIR/lf11a-project-frontend-0.1.0-setup.exe" "$BUILD_DIR/"
-            echo -e "${GREEN}✓ Windows installer created: lf11a-project-frontend-0.1.0-setup.exe${NC}"
+        if [ -f "$WIN_DIR/lf11a-project-frontend-${APP_VERSION}-setup.exe" ]; then
+            mv "$WIN_DIR/lf11a-project-frontend-${APP_VERSION}-setup.exe" "$BUILD_DIR/"
+            echo -e "${GREEN}✓ Windows installer created: lf11a-project-frontend-${APP_VERSION}-setup.exe${NC}"
         fi
     else
         echo -e "${YELLOW}NSIS not found. Only portable Windows build created.${NC}"
@@ -805,7 +805,7 @@ if [ -f "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-x86_64.AppImage" ]; then
     PACKAGES_CREATED=$((PACKAGES_CREATED + 1))
 fi
 
-if [ -f "$BUILD_DIR/lf11a-project-frontend-0.1.0-setup.exe" ]; then
+if [ -f "$BUILD_DIR/lf11a-project-frontend-${APP_VERSION}-setup.exe" ]; then
     echo -e "${GREEN}✓ Windows Installer:${NC}"
     ls -lh "$BUILD_DIR"/*-setup.exe
     echo -e "  Run the installer on Windows to install the application"
