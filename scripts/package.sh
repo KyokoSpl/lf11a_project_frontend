@@ -227,6 +227,9 @@ echo -e "${YELLOW}Cleaning previous builds...${NC}"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
+# Change to project root for cargo commands
+cd "$PROJECT_ROOT"
+
 # Build the application in release mode
 echo -e "${YELLOW}Building application in release mode...${NC}"
 cargo build --release
@@ -234,12 +237,12 @@ cargo build --release
 # Convert SVG icon to PNG (requires inkscape or imagemagick)
 echo -e "${YELLOW}Converting icon to PNG...${NC}"
 if command -v inkscape &> /dev/null; then
-    inkscape assets/icon.svg --export-filename="$BUILD_DIR/icon.png" --export-width=512 --export-height=512
+    inkscape "$PROJECT_ROOT/assets/icon.svg" --export-filename="$BUILD_DIR/icon.png" --export-width=512 --export-height=512
 elif command -v convert &> /dev/null; then
-    convert -background none assets/icon.svg -resize 512x512 "$BUILD_DIR/icon.png"
+    convert -background none "$PROJECT_ROOT/assets/icon.svg" -resize 512x512 "$BUILD_DIR/icon.png"
 else
     echo -e "${RED}Warning: Neither inkscape nor imagemagick found. Icon conversion skipped.${NC}"
-    cp assets/icon.svg "$BUILD_DIR/icon.png" 2>/dev/null || true
+    cp "$PROJECT_ROOT/assets/icon.svg" "$BUILD_DIR/icon.png" 2>/dev/null || true
 fi
 
 # Create additional icon sizes for Linux
@@ -324,7 +327,7 @@ tar -czf "$TARBALL" -C /tmp "${APP_NAME}-${APP_VERSION}"
 rm -rf "/tmp/${APP_NAME}-${APP_VERSION}"
 
 # Create RPM spec file
-cat > "$RPM_BUILD_DIR/SPECS/${APP_NAME}.spec" << 'EOF'
+cat > "$RPM_BUILD_DIR/SPECS/${APP_NAME}.spec" << EOF
 %global debug_package %{nil}
 
 Name:           lf11a-project-frontend

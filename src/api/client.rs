@@ -8,6 +8,7 @@ pub struct ApiClient {
     client: Client,
 }
 
+#[allow(dead_code)]
 impl ApiClient {
     pub fn new() -> Self {
         Self {
@@ -24,14 +25,21 @@ impl ApiClient {
         Ok(departments)
     }
 
-    pub async fn create_department(&self, req: &CreateDepartmentRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn create_department(
+        &self,
+        req: &CreateDepartmentRequest,
+    ) -> Result<(), Box<dyn Error>> {
         let config = Config::get();
         let url = format!("{}{}", config.api_url(), config.route_departments);
         self.client.post(&url).json(req).send().await?;
         Ok(())
     }
 
-    pub async fn update_department(&self, id: &str, req: &UpdateDepartmentRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_department(
+        &self,
+        id: &str,
+        req: &UpdateDepartmentRequest,
+    ) -> Result<(), Box<dyn Error>> {
         let config = Config::get();
         let url = format!("{}{}/{}", config.api_url(), config.route_departments, id);
         self.client.put(&url).json(req).send().await?;
@@ -45,19 +53,34 @@ impl ApiClient {
         Ok(())
     }
 
-    pub async fn get_employees_by_department(&self, dept_id: &str) -> Result<Vec<Employee>, Box<dyn Error>> {
+    pub async fn get_employees_by_department(
+        &self,
+        dept_id: &str,
+    ) -> Result<Vec<Employee>, Box<dyn Error>> {
         let config = Config::get();
-        let url = format!("{}{}/{}/employees", config.api_url(), config.route_departments, dept_id);
+        let url = format!(
+            "{}{}/{}/employees",
+            config.api_url(),
+            config.route_departments,
+            dept_id
+        );
         let resp = self.client.get(&url).send().await?;
         let employees = resp.json::<Vec<Employee>>().await?;
         Ok(employees)
     }
 
     // Employee endpoints
-    pub async fn get_employees(&self, include_inactive: bool) -> Result<Vec<Employee>, Box<dyn Error>> {
+    pub async fn get_employees(
+        &self,
+        include_inactive: bool,
+    ) -> Result<Vec<Employee>, Box<dyn Error>> {
         let config = Config::get();
         let url = if include_inactive {
-            format!("{}{}?include_inactive=true", config.api_url(), config.route_employees)
+            format!(
+                "{}{}?include_inactive=true",
+                config.api_url(),
+                config.route_employees
+            )
         } else {
             format!("{}{}", config.api_url(), config.route_employees)
         };
@@ -73,7 +96,11 @@ impl ApiClient {
         Ok(())
     }
 
-    pub async fn update_employee(&self, id: &str, req: &UpdateEmployeeRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_employee(
+        &self,
+        id: &str,
+        req: &UpdateEmployeeRequest,
+    ) -> Result<(), Box<dyn Error>> {
         let config = Config::get();
         let url = format!("{}{}/{}", config.api_url(), config.route_employees, id);
         let resp = self.client.put(&url).json(req).send().await?;
@@ -101,14 +128,21 @@ impl ApiClient {
         Ok(grades)
     }
 
-    pub async fn create_salary_grade(&self, req: &CreateSalaryGradeRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn create_salary_grade(
+        &self,
+        req: &CreateSalaryGradeRequest,
+    ) -> Result<(), Box<dyn Error>> {
         let config = Config::get();
         let url = format!("{}{}", config.api_url(), config.route_salary_grades);
         self.client.post(&url).json(req).send().await?;
         Ok(())
     }
 
-    pub async fn update_salary_grade(&self, id: &str, req: &UpdateSalaryGradeRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_salary_grade(
+        &self,
+        id: &str,
+        req: &UpdateSalaryGradeRequest,
+    ) -> Result<(), Box<dyn Error>> {
         let config = Config::get();
         let url = format!("{}{}/{}", config.api_url(), config.route_salary_grades, id);
         self.client.put(&url).json(req).send().await?;

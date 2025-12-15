@@ -18,8 +18,7 @@ impl Config {
         Ok(Config {
             api_base_url: std::env::var("API_BASE_URL")
                 .unwrap_or_else(|_| "http://212.132.110.72:8082".to_string()),
-            api_prefix: std::env::var("API_PREFIX")
-                .unwrap_or_else(|_| "/api".to_string()),
+            api_prefix: std::env::var("API_PREFIX").unwrap_or_else(|_| "/api".to_string()),
             route_departments: std::env::var("ROUTE_DEPARTMENTS")
                 .unwrap_or_else(|_| "/departments".to_string()),
             route_employees: std::env::var("ROUTE_EMPLOYEES")

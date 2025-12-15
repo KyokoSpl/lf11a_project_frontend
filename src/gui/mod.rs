@@ -1,20 +1,20 @@
 //! GUI module for the Personnel Management application
-//! 
+//!
 //! This module contains all the UI-related code organized into submodules:
 //! - `colors`: Material 3 color palette
 //! - `components`: Reusable UI components (buttons, cards)
 //! - `views`: Tab views (departments, employees, salary_grades)
 //! - `app`: Main application struct and eframe::App implementation
 
+pub mod app;
 pub mod colors;
 pub mod components;
 pub mod views;
-pub mod app;
 
 // Re-export commonly used types
-pub use colors::Material3Colors;
-pub use components::{material_button, material_card, styled_text_input, styled_dropdown};
 pub use app::PersonnelApp;
+pub use colors::Material3Colors;
+pub use components::{material_button, styled_dropdown};
 
 /// The tab navigation enum
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -38,7 +38,7 @@ mod tests {
     #[test]
     fn test_tab_clone() {
         let tab = Tab::Employees;
-        let cloned = tab.clone();
+        let cloned = tab; // Copy trait is implemented
         assert_eq!(tab, cloned);
     }
 

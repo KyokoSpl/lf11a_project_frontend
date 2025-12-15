@@ -1,5 +1,5 @@
 //! Views module containing the tab views
-//! 
+//!
 //! Each tab in the application has its own submodule:
 //! - `departments`: Department management view
 //! - `employees`: Employee management view  

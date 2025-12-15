@@ -2,50 +2,57 @@
 //!
 //! This module provides helper functions for creating consistent UI elements.
 
-use egui::{Button, Frame, Margin, Response, RichText, Rounding, Stroke, TextEdit, Ui, Vec2};
 use super::Material3Colors;
+use egui::{Button, Frame, Margin, Response, RichText, Rounding, Stroke, TextEdit, Ui, Vec2};
 
 /// Creates a Material 3 styled button
-/// 
+///
 /// # Arguments
 /// * `ui` - The egui UI context
 /// * `colors` - The Material 3 color palette
 /// * `text` - Button label text
 /// * `primary` - If true, uses primary color; otherwise uses surface variant
-/// 
+///
 /// # Returns
 /// The button's response for handling clicks
-pub fn material_button(ui: &mut Ui, colors: &Material3Colors, text: &str, primary: bool) -> Response {
-    let (bg_color, text_color) = if primary { 
-        (colors.primary, colors.on_primary) 
-    } else { 
-        (colors.surface_variant, colors.on_surface) 
+pub fn material_button(
+    ui: &mut Ui,
+    colors: &Material3Colors,
+    text: &str,
+    primary: bool,
+) -> Response {
+    let (bg_color, text_color) = if primary {
+        (colors.primary, colors.on_primary)
+    } else {
+        (colors.surface_variant, colors.on_surface)
     };
-    
-    let button = Button::new(
-        RichText::new(text)
-            .color(text_color)
-            .size(13.0)
-    )
-    .fill(bg_color)
-    .stroke(Stroke::NONE)
-    .rounding(Rounding::same(8.0))
-    .min_size(Vec2::new(90.0, 36.0));
-    
+
+    let button = Button::new(RichText::new(text).color(text_color).size(13.0))
+        .fill(bg_color)
+        .stroke(Stroke::NONE)
+        .rounding(Rounding::same(8.0))
+        .min_size(Vec2::new(90.0, 36.0));
+
     ui.add(button)
 }
 
 /// Creates a Material 3 styled text input field
-/// 
+///
 /// # Arguments
 /// * `ui` - The egui UI context
 /// * `colors` - The Material 3 color palette
 /// * `text` - Mutable reference to the string to edit
 /// * `hint` - Placeholder hint text
-/// 
+///
 /// # Returns
 /// The text edit's response
-pub fn styled_text_input(ui: &mut Ui, colors: &Material3Colors, text: &mut String, hint: &str) -> Response {
+#[allow(dead_code)]
+pub fn styled_text_input(
+    ui: &mut Ui,
+    colors: &Material3Colors,
+    text: &mut String,
+    hint: &str,
+) -> Response {
     Frame::none()
         .fill(colors.surface)
         .stroke(Stroke::new(1.0, colors.outline_variant))
@@ -57,23 +64,29 @@ pub fn styled_text_input(ui: &mut Ui, colors: &Material3Colors, text: &mut Strin
                     .desired_width(380.0)
                     .hint_text(RichText::new(hint).color(colors.on_surface_variant))
                     .text_color(colors.on_surface)
-                    .frame(false)
+                    .frame(false),
             )
-        }).inner
+        })
+        .inner
 }
 
 /// Apply Material 3 styling to a ComboBox dropdown scope
-/// 
+///
 /// # Arguments
 /// * `ui` - The egui UI context
 /// * `colors` - The Material 3 color palette
 /// * `content` - Closure that renders the ComboBox
-pub fn styled_dropdown<R>(ui: &mut Ui, colors: &Material3Colors, content: impl FnOnce(&mut Ui) -> R) -> R {
+pub fn styled_dropdown<R>(
+    ui: &mut Ui,
+    colors: &Material3Colors,
+    content: impl FnOnce(&mut Ui) -> R,
+) -> R {
     ui.scope(|ui| {
         // Style the combobox button
         ui.style_mut().visuals.widgets.inactive.weak_bg_fill = colors.surface;
         ui.style_mut().visuals.widgets.inactive.bg_fill = colors.surface;
-        ui.style_mut().visuals.widgets.inactive.bg_stroke = Stroke::new(1.0, colors.outline_variant);
+        ui.style_mut().visuals.widgets.inactive.bg_stroke =
+            Stroke::new(1.0, colors.outline_variant);
         ui.style_mut().visuals.widgets.inactive.rounding = Rounding::same(8.0);
         ui.style_mut().visuals.widgets.inactive.fg_stroke = Stroke::new(1.0, colors.on_surface);
         ui.style_mut().visuals.widgets.hovered.weak_bg_fill = colors.surface;
@@ -88,27 +101,28 @@ pub fn styled_dropdown<R>(ui: &mut Ui, colors: &Material3Colors, content: impl F
         ui.style_mut().visuals.widgets.open.bg_fill = colors.surface;
         ui.style_mut().visuals.widgets.open.bg_stroke = Stroke::new(2.0, colors.primary);
         ui.style_mut().visuals.widgets.open.rounding = Rounding::same(8.0);
-        
+
         // Style the popup menu background
         ui.style_mut().visuals.window_fill = colors.surface;
         ui.style_mut().visuals.window_stroke = Stroke::new(1.0, colors.outline_variant);
         ui.style_mut().visuals.window_rounding = Rounding::same(8.0);
         ui.style_mut().visuals.popup_shadow = egui::epaint::Shadow::NONE;
-        
+
         // Selection highlight color
         ui.style_mut().visuals.selection.bg_fill = colors.primary_container;
         ui.style_mut().visuals.selection.stroke = Stroke::NONE;
-        
+
         ui.style_mut().spacing.combo_height = 40.0;
         // Increase the popup menu height to show more items
         ui.style_mut().spacing.combo_width = 430.0;
-        
+
         content(ui)
-    }).inner
+    })
+    .inner
 }
 
 /// Creates a Material 3 styled card container
-/// 
+///
 /// # Arguments
 /// * `ui` - The egui UI context
 /// * `colors` - The Material 3 color palette
@@ -141,7 +155,7 @@ mod tests {
         let c1 = Color32::from_rgb(100, 100, 100);
         let c2 = Color32::from_rgb(100, 100, 100);
         let c3 = Color32::from_rgb(200, 200, 200);
-        
+
         assert_eq!(c1, c2);
         assert_ne!(c1, c3);
     }
