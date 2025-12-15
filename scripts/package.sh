@@ -64,8 +64,11 @@ create_github_release() {
     fi
     
     # Copy RPM package
-    if [ -f "$HOME/rpmbuild/RPMS/x86_64/${APP_NAME}-${APP_VERSION}-1.x86_64.rpm" ]; then
-        cp "$HOME/rpmbuild/RPMS/x86_64/${APP_NAME}-${APP_VERSION}-1.x86_64.rpm" "$RELEASES_DIR/"
+    if [ -f "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-1.x86_64.rpm" ]; then
+        cp "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-1.x86_64.rpm" "$RELEASES_DIR/"
+        echo -e "${GREEN}✓${NC} RPM package"
+    elif [ -f "$BUILD_DIR/rpmbuild/RPMS/x86_64/${APP_NAME}-${APP_VERSION}-1.x86_64.rpm" ]; then
+        cp "$BUILD_DIR/rpmbuild/RPMS/x86_64/${APP_NAME}-${APP_VERSION}-1.x86_64.rpm" "$RELEASES_DIR/"
         echo -e "${GREEN}✓${NC} RPM package"
     fi
     
@@ -76,8 +79,8 @@ create_github_release() {
     fi
     
     # Copy Windows installer
-    if [ -f "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-setup.exe" ]; then
-        cp "$BUILD_DIR/${APP_NAME}-${APP_VERSION}-setup.exe" "$RELEASES_DIR/"
+    if [ -f "$BUILD_DIR/lf11a-project-frontend-${APP_VERSION}-setup.exe" ]; then
+        cp "$BUILD_DIR/lf11a-project-frontend-${APP_VERSION}-setup.exe" "$RELEASES_DIR/"
         echo -e "${GREEN}✓${NC} Windows installer"
     fi
     
@@ -120,38 +123,82 @@ EOF
 
 | Platform | Package | Description |
 |----------|---------|-------------|
-| Debian/Ubuntu | \`${APP_NAME}_${APP_VERSION}_amd64.deb\` | Install with \`sudo dpkg -i\` |
-| Fedora/RHEL | \`${APP_NAME}-${APP_VERSION}-1.x86_64.rpm\` | Install with \`sudo rpm -i\` |
-| Linux (Universal) | \`${APP_NAME}-${APP_VERSION}-x86_64.AppImage\` | Make executable and run |
-| Windows | \`${APP_NAME}-${APP_VERSION}-setup.exe\` | Run the installer |
-| Arch Linux | \`PKGBUILD\` | Build with \`makepkg -si\` |
+| Debian/Ubuntu | \`${APP_NAME}_${APP_VERSION}_amd64.deb\` | APT/dpkg package |
+| Fedora/RHEL/openSUSE | \`${APP_NAME}-${APP_VERSION}-1.x86_64.rpm\` | RPM package |
+| Arch Linux | \`PKGBUILD\` | Build with makepkg |
+| Windows | \`${APP_NAME}-${APP_VERSION}-setup.exe\` | NSIS Installer (Recommended) |
+| Linux (Universal) | \`${APP_NAME}-${APP_VERSION}-x86_64.AppImage\` | Portable (if available) |
 
 ## System Requirements
 
-- **Linux**: X11/Wayland with OpenGL support
-- **Windows**: Windows 10/11 with OpenGL support
+- **Linux**: X11/Wayland with OpenGL support, libGL, libxcb, libxkbcommon
+- **Windows**: Windows 10/11 with OpenGL support (usually built-in)
 
 ## Installation
 
-### Linux (DEB)
+### Debian/Ubuntu
 \`\`\`bash
-sudo dpkg -i ${APP_NAME}_${APP_VERSION}_amd64.deb
-sudo apt-get install -f  # Install dependencies if needed
+sudo apt install ./lf11a-project-frontend_${APP_VERSION}_amd64.deb
 \`\`\`
 
-### Linux (RPM)
+### Fedora/RHEL/CentOS
 \`\`\`bash
-sudo rpm -i ${APP_NAME}-${APP_VERSION}-1.x86_64.rpm
+sudo dnf install ./lf11a-project-frontend-${APP_VERSION}-1.x86_64.rpm
+# or
+sudo rpm -i ./lf11a-project-frontend-${APP_VERSION}-1.x86_64.rpm
 \`\`\`
 
-### Linux (AppImage)
+### Arch Linux
+\`\`\`bash
+# Download PKGBUILD to a directory
+cd /path/to/PKGBUILD/directory
+makepkg -si
+\`\`\`
+
+The application will be installed to \`/usr/bin/lf11a-project-frontend\`.
+
+### Windows
+
+**Option 1: NSIS Installer (Recommended)**
+1. Download \`lf11a-project-frontend-${APP_VERSION}-setup.exe\`
+2. Double-click to run the installer
+3. Follow the installation wizard
+4. The application will be added to:
+   - Desktop (shortcut)
+   - Start Menu
+5. No administrator rights required (installs to user directory)
+
+**Features:**
+- Easy uninstallation via Control Panel
+- Automatic Windows Registry integration
+- Desktop and Start Menu shortcuts with icon
+
+**Option 2: Portable (if available)**
+- Download the portable .exe file
+- No installation needed - just run it
+- Configure .env file in the same directory
+
+### AppImage (Universal Linux)
 \`\`\`bash
 chmod +x ${APP_NAME}-${APP_VERSION}-x86_64.AppImage
 ./${APP_NAME}-${APP_VERSION}-x86_64.AppImage
 \`\`\`
 
-### Windows
-Run the installer and follow the prompts. Desktop and Start Menu shortcuts will be created.
+## Configuration
+
+After installation, configure the application by editing the \`.env\` file with your backend API URL:
+
+\`\`\`bash
+API_BASE_URL=http://localhost:8082
+API_PREFIX=/api
+\`\`\`
+
+**Note:** For packaged installations, the .env file location varies:
+- **Linux (DEB/RPM)**: \`/usr/share/lf11a-project-frontend/.env\` (if included)
+- **Arch Linux**: Configure via environment variables
+- **Windows Installer**: In installation directory (typically \`%LOCALAPPDATA%\\LF11A Project Frontend\`)
+- **Portable**: In the same directory as the executable
+
 EOF
     
     echo -e "${GREEN}Release notes generated: ${RELEASE_NOTES_FILE}${NC}"
@@ -562,7 +609,7 @@ WINREADME
     if command -v makensis &> /dev/null; then
         echo -e "${YELLOW}Creating Windows installer with NSIS...${NC}"
         
-        cat > "$WIN_DIR/installer.nsi" << 'NSIS'
+        cat > "$WIN_DIR/installer.nsi" << NSIS
 !define APP_NAME "LF11A Project Frontend"
 !define COMP_NAME "kyoko"
 !define VERSION "${APP_VERSION}"
@@ -572,15 +619,15 @@ WINREADME
 !define MAIN_APP_EXE "lf11a-project-frontend.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
 !define REG_ROOT "HKCU"
-!define REG_APP_PATH "Software\Microsoft\Windows\CurrentVersion\App Paths\${MAIN_APP_EXE}"
-!define UNINSTALL_PATH "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
+!define REG_APP_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\\${MAIN_APP_EXE}"
+!define UNINSTALL_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\\${APP_NAME}"
 
 !include "MUI2.nsh"
 
-Name "${APP_NAME}"
-OutFile "${INSTALLER_NAME}"
-InstallDir "$LOCALAPPDATA\${APP_NAME}"
-InstallDirRegKey "${REG_ROOT}" "${REG_APP_PATH}" ""
+Name "\${APP_NAME}"
+OutFile "\${INSTALLER_NAME}"
+InstallDir "\$LOCALAPPDATA\\\${APP_NAME}"
+InstallDirRegKey "\${REG_ROOT}" "\${REG_APP_PATH}" ""
 
 !define MUI_ABORTWARNING
 !define MUI_UNABORTWARNING
@@ -590,7 +637,7 @@ InstallDirRegKey "${REG_ROOT}" "${REG_APP_PATH}" ""
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
-!define MUI_FINISHPAGE_RUN "$INSTDIR\${MAIN_APP_EXE}"
+!define MUI_FINISHPAGE_RUN "\$INSTDIR\\\${MAIN_APP_EXE}"
 !insertmacro MUI_PAGE_FINISH
 
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -599,62 +646,62 @@ InstallDirRegKey "${REG_ROOT}" "${REG_APP_PATH}" ""
 !insertmacro MUI_LANGUAGE "English"
 
 Section "MainSection" SEC01
-    ${INSTALL_TYPE}
-    SetOutPath "$INSTDIR"
+    \${INSTALL_TYPE}
+    SetOutPath "\$INSTDIR"
     SetOverwrite ifnewer
     File "lf11a-project-frontend.exe"
-    File ".env"
+    File /nonfatal ".env"
     File "README.txt"
     File /nonfatal "icon.png"
     File /nonfatal "icon.ico"
 SectionEnd
 
 Section -AdditionalIcons
-    ${INSTALL_TYPE}
-    SetOutPath "$INSTDIR"
-    CreateDirectory "$SMPROGRAMS\${APP_NAME}"
+    \${INSTALL_TYPE}
+    SetOutPath "\$INSTDIR"
+    CreateDirectory "\$SMPROGRAMS\\\${APP_NAME}"
     
     ; Create Start Menu shortcut with icon
-    CreateShortCut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${MAIN_APP_EXE}" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL "" "Personnel Management Application"
+    CreateShortCut "\$SMPROGRAMS\\\${APP_NAME}\\\${APP_NAME}.lnk" "\$INSTDIR\\\${MAIN_APP_EXE}" "" "\$INSTDIR\\icon.ico" 0 SW_SHOWNORMAL "" "Personnel Management Application"
     
     ; Create Desktop shortcut with icon
-    CreateShortCut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${MAIN_APP_EXE}" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL "" "Personnel Management Application"
+    CreateShortCut "\$DESKTOP\\\${APP_NAME}.lnk" "\$INSTDIR\\\${MAIN_APP_EXE}" "" "\$INSTDIR\\icon.ico" 0 SW_SHOWNORMAL "" "Personnel Management Application"
     
     ; Create Uninstall shortcut
-    CreateShortCut "$SMPROGRAMS\${APP_NAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+    CreateShortCut "\$SMPROGRAMS\\\${APP_NAME}\\Uninstall.lnk" "\$INSTDIR\\uninstall.exe"
 SectionEnd
 
 Section -Post
-    ${INSTALL_TYPE}
-    WriteUninstaller "$INSTDIR\uninstall.exe"
-    WriteRegStr ${REG_ROOT} "${REG_APP_PATH}" "" "$INSTDIR\${MAIN_APP_EXE}"
-    WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "DisplayName" "${APP_NAME}"
-    WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "UninstallString" "$INSTDIR\uninstall.exe"
-    WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "DisplayIcon" "$INSTDIR\${MAIN_APP_EXE}"
-    WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "DisplayVersion" "${VERSION}"
-    WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "Publisher" "${COMP_NAME}"
+    \${INSTALL_TYPE}
+    WriteUninstaller "\$INSTDIR\\uninstall.exe"
+    WriteRegStr \${REG_ROOT} "\${REG_APP_PATH}" "" "\$INSTDIR\\\${MAIN_APP_EXE}"
+    WriteRegStr \${REG_ROOT} "\${UNINSTALL_PATH}" "DisplayName" "\${APP_NAME}"
+    WriteRegStr \${REG_ROOT} "\${UNINSTALL_PATH}" "UninstallString" "\$INSTDIR\\uninstall.exe"
+    WriteRegStr \${REG_ROOT} "\${UNINSTALL_PATH}" "DisplayIcon" "\$INSTDIR\\\${MAIN_APP_EXE}"
+    WriteRegStr \${REG_ROOT} "\${UNINSTALL_PATH}" "DisplayVersion" "\${VERSION}"
+    WriteRegStr \${REG_ROOT} "\${UNINSTALL_PATH}" "Publisher" "\${COMP_NAME}"
 SectionEnd
 
 Section Uninstall
-    ${INSTALL_TYPE}
-    Delete "$INSTDIR\${MAIN_APP_EXE}"
-    Delete "$INSTDIR\.env.example"
-    Delete "$INSTDIR\.env"
-    Delete "$INSTDIR\README.txt"
-    Delete "$INSTDIR\icon.png"
-    Delete "$INSTDIR\icon.ico"
-    Delete "$INSTDIR\uninstall.exe"
+    \${INSTALL_TYPE}
+    Delete "\$INSTDIR\\\${MAIN_APP_EXE}"
+    Delete "\$INSTDIR\\.env.example"
+    Delete "\$INSTDIR\\.env"
+    Delete "\$INSTDIR\\README.txt"
+    Delete "\$INSTDIR\\icon.png"
+    Delete "\$INSTDIR\\icon.ico"
+    Delete "\$INSTDIR\\uninstall.exe"
     
     ; Remove shortcuts
-    Delete "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk"
-    Delete "$SMPROGRAMS\${APP_NAME}\Uninstall.lnk"
-    Delete "$DESKTOP\${APP_NAME}.lnk"
+    Delete "\$SMPROGRAMS\\\${APP_NAME}\\\${APP_NAME}.lnk"
+    Delete "\$SMPROGRAMS\\\${APP_NAME}\\Uninstall.lnk"
+    Delete "\$DESKTOP\\\${APP_NAME}.lnk"
     
-    RMDir "$SMPROGRAMS\${APP_NAME}"
-    RMDir "$INSTDIR"
+    RMDir "\$SMPROGRAMS\\\${APP_NAME}"
+    RMDir "\$INSTDIR"
     
-    DeleteRegKey ${REG_ROOT} "${REG_APP_PATH}"
-    DeleteRegKey ${REG_ROOT} "${UNINSTALL_PATH}"
+    DeleteRegKey \${REG_ROOT} "\${REG_APP_PATH}"
+    DeleteRegKey \${REG_ROOT} "\${UNINSTALL_PATH}"
 SectionEnd
 NSIS
         
@@ -710,6 +757,10 @@ if [ -f "$ARCH_DIR/PKGBUILD" ]; then
     echo -e "${GREEN}✓ Arch Linux Package:${NC}"
     echo -e "  Location: ${YELLOW}$ARCH_DIR/PKGBUILD${NC}"
     echo -e "  Build & Install: ${YELLOW}cd $ARCH_DIR && makepkg -si${NC}"
+    echo -e "  This will:"
+    echo -e "    - Build the package"
+    echo -e "    - Install it with pacman"
+    echo -e "    - Binary will be at: /usr/bin/lf11a-project-frontend"
     echo ""
     PACKAGES_CREATED=$((PACKAGES_CREATED + 1))
 fi
@@ -725,14 +776,30 @@ fi
 if [ -f "$BUILD_DIR/lf11a-project-frontend-${APP_VERSION}-setup.exe" ]; then
     echo -e "${GREEN}✓ Windows Installer:${NC}"
     ls -lh "$BUILD_DIR"/*-setup.exe
-    echo -e "  Run the installer on Windows to install the application"
+    echo -e "  ${YELLOW}Recommended for Windows users${NC}"
+    echo -e "  Features:"
+    echo -e "    - Easy installation wizard"
+    echo -e "    - Desktop and Start Menu shortcuts"
+    echo -e "    - Automatic uninstaller"
+    echo -e "    - No admin rights required"
+    echo -e "  Usage:"
+    echo -e "    1. Transfer the setup.exe to Windows"
+    echo -e "    2. Double-click to run the installer"
+    echo -e "    3. Follow the installation wizard"
     echo ""
     PACKAGES_CREATED=$((PACKAGES_CREATED + 1))
 elif [ -f "$WIN_DIR/${APP_NAME}.exe" ]; then
     echo -e "${GREEN}✓ Windows Portable Executable:${NC}"
     ls -lh "$WIN_DIR"/*.exe
     echo -e "  Location: ${YELLOW}$WIN_DIR/${NC}"
-    echo -e "  Note: Install GTK4 runtime first"
+    echo -e "  ${YELLOW}Portable version - no installation needed${NC}"
+    echo -e "  Requirements:"
+    echo -e "    - Windows 10/11"
+    echo -e "    - OpenGL support (usually built-in)"
+    echo -e "  Usage:"
+    echo -e "    1. Copy the entire windows folder to your Windows machine"
+    echo -e "    2. Run lf11a-project-frontend.exe"
+    echo -e "    3. Configure .env file with your API settings"
     echo ""
     PACKAGES_CREATED=$((PACKAGES_CREATED + 1))
 fi
