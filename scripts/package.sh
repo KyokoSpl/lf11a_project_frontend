@@ -399,7 +399,13 @@ echo -e "${GREEN}=== Creating Arch Linux package ===${NC}"
 ARCH_DIR="$BUILD_DIR/arch"
 mkdir -p "$ARCH_DIR"
 
-cat > "$ARCH_DIR/PKGBUILD" << 'EOF'
+# Copy the binary and icon
+cp "$PROJECT_ROOT/target/release/lf11a_project_frontend_egui" "$ARCH_DIR/"
+if [ -f "$BUILD_DIR/icon.png" ]; then
+    cp "$BUILD_DIR/icon.png" "$ARCH_DIR/"
+fi
+
+cat > "$ARCH_DIR/PKGBUILD" << EOF
 # Maintainer: kyoko <kyoko@example.com>
 pkgname=lf11a-project-frontend
 pkgver=${APP_VERSION}
@@ -409,29 +415,21 @@ arch=('x86_64')
 url="https://github.com/KyokoSpl/lf11a_project_frontend"
 license=('MIT')
 depends=('libgl' 'libxcb' 'libxkbcommon')
-makedepends=('rust' 'cargo')
-source=("$pkgname-$pkgver.tar.gz")
-sha256sums=('SKIP')
-
-build() {
-    cd "$srcdir/$pkgname-$pkgver"
-    cargo build --release --locked
-}
+source=('lf11a_project_frontend_egui' 'icon.png')
+md5sums=('SKIP' 'SKIP')
 
 package() {
-    cd "$srcdir/$pkgname-$pkgver"
+    install -Dm755 "\${srcdir}/lf11a_project_frontend_egui" "\${pkgdir}/usr/bin/\${pkgname}"
+    install -Dm644 "\${srcdir}/icon.png" "\${pkgdir}/usr/share/icons/hicolor/512x512/apps/\${pkgname}.png"
     
-    install -Dm755 "target/release/lf11a_project_frontend_egui" "$pkgdir/usr/bin/$pkgname"
-    install -Dm644 "icon.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/$pkgname.png"
-    
-    install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/$pkgname.desktop" << DESKTOP
+    install -Dm644 /dev/stdin "\${pkgdir}/usr/share/applications/\${pkgname}.desktop" << DESKTOP
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=LF11A Project Frontend
 Comment=Personnel Management Application
-Exec=$pkgname
-Icon=$pkgname
+Exec=\${pkgname}
+Icon=\${pkgname}
 Categories=Office;Database;
 Terminal=false
 DESKTOP
