@@ -356,7 +356,6 @@ mkdir -p %{buildroot}%{_datadir}/%{name}
 
 install -m 755 lf11a_project_frontend_egui %{buildroot}%{_bindir}/%{name}
 install -m 644 icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/%{name}.png || true
-install -m 644 .env %{buildroot}%{_datadir}/%{name}/.env 2>/dev/null || install -m 644 .env.example %{buildroot}%{_datadir}/%{name}/.env 2>/dev/null || true
 
 cat > %{buildroot}%{_datadir}/applications/%{name}.desktop << DESKTOP
 [Desktop Entry]
@@ -374,7 +373,6 @@ DESKTOP
 %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/512x512/apps/%{name}.png
-%{_datadir}/%{name}/.env
 
 %changelog
 * Wed Nov 27 2024 kyoko <kyoko@example.com> - ${APP_VERSION}-1
