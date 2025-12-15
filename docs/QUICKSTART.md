@@ -30,15 +30,13 @@ chmod +x lf11a-project-frontend-0.1.0-x86_64.AppImage
 
 #### Windows (Installer - Recommended)
 1. Download and run `lf11a-project-frontend-0.1.0-setup.exe`
-2. Install GTK4 runtime from https://www.gtk.org/
-3. Configure `.env` in installation directory: `%LOCALAPPDATA%\LF11A Project Frontend`
-4. Launch from Start Menu or Desktop shortcut
+2. Configure `.env` in installation directory: `%LOCALAPPDATA%\LF11A Project Frontend`
+3. Launch from Start Menu or Desktop shortcut
 
 #### Windows (Portable)
 1. Extract the portable folder
-2. Install GTK4 runtime from https://www.gtk.org/
-3. Edit `.env` with your API settings
-4. Run `lf11a-project-frontend.exe`
+2. Edit `.env` with your API settings
+3. Run `lf11a-project-frontend.exe`
 
 ### Configuration
 
@@ -85,14 +83,14 @@ cargo run           # Run debug build
 cargo build --release  # Release build
 ```
 
-### Quick Install (local user - development only)
+### Run Tests
 ```bash
-./install-user.sh    # Installs to ~/.local/bin (NOT for distribution)
+cargo test           # Run all tests
 ```
 
 ### Create Distribution Packages
 ```bash
-./package.sh         # Creates packages in build/ directory
+./scripts/package.sh         # Creates packages in build/ directory
 ```
 **Important:** This only creates the package files. Users install them with:
 - DEB: `sudo apt install ./lf11a-project-frontend_0.1.0_amd64.deb`

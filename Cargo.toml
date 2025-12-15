@@ -1,29 +1,25 @@
 [package]
-name = "lf11a_project_frontend"
-version = "0.1.1"
+name = "lf11a_project_frontend_egui"
+version = "0.1.0"
 edition = "2021"
 authors = ["kyoko"]
-description = "A modern GTK4-based personnel management application"
+description = "A modern egui-based personnel management application with Material 3 design"
 license = "MIT"
-repository = "https://github.com/KyokoSpl/lf11a_project_frontend"
-homepage = "https://github.com/KyokoSpl/lf11a_project_frontend"
-keywords = ["gtk", "personnel", "management", "database"]
-categories = ["gui"]
-
-[lib]
-name = "lf11a_project_frontend"
-path = "src/mod.rs"
 
 [[bin]]
-name = "lf11a_project_frontend"
+name = "lf11a_project_frontend_egui"
 path = "src/main.rs"
 
 [dependencies]
-gtk = { version = "0.10.2", package = "gtk4" }
+eframe = "0.29"
+egui = "0.29"
 reqwest = { version = "0.12.24", features = ["json"] }
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.48.0", features = ["full"] }
 dotenvy = "0.15"
+serde_json = "1.0.145"
+image = { version = "0.25", default-features = false, features = ["png"] }
+resvg = "0.44"
 
 [dev-dependencies]
 serde_json = "1.0.145"

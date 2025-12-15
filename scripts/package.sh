@@ -9,11 +9,12 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 APP_NAME="lf11a-project-frontend"
-APP_DESCRIPTION="LF11A Project Frontend - GTK4 Personnel Management Application"
+APP_DESCRIPTION="LF11A Project Frontend - egui Personnel Management Application"
 AUTHOR="kyoko"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
 RELEASES_DIR="$PROJECT_ROOT/releases"
+BINARY_NAME="lf11a_project_frontend_egui"
 
 # Extract version from Cargo.toml
 APP_VERSION=$(grep '^version' "$PROJECT_ROOT/Cargo.toml" | head -1 | sed 's/.*"\(.*\)".*/\1/')
@@ -127,8 +128,8 @@ EOF
 
 ## System Requirements
 
-- **Linux**: GTK4 4.6+, glib 2.66+
-- **Windows**: Windows 10/11 (GTK4 bundled with installer)
+- **Linux**: X11/Wayland with OpenGL support
+- **Windows**: Windows 10/11 with OpenGL support
 
 ## Installation
 
@@ -261,7 +262,7 @@ mkdir -p "$DEB_DIR/usr/share/pixmaps"
 mkdir -p "$DEB_DIR/usr/share/$APP_NAME"
 
 # Copy binary
-cp target/release/lf11a_project_frontend "$DEB_DIR/usr/bin/$APP_NAME"
+cp "target/release/$BINARY_NAME" "$DEB_DIR/usr/bin/$APP_NAME"
 chmod +x "$DEB_DIR/usr/bin/$APP_NAME"
 
 # Copy icon
@@ -269,9 +270,6 @@ if [ -f "$BUILD_DIR/icon.png" ]; then
     cp "$BUILD_DIR/icon.png" "$DEB_DIR/usr/share/icons/hicolor/512x512/apps/$APP_NAME.png"
     cp "$BUILD_DIR/icon.png" "$DEB_DIR/usr/share/pixmaps/$APP_NAME.png"
 fi
-
-# Copy CSS file
-cp assets/style.css "$DEB_DIR/usr/share/$APP_NAME/" 2>/dev/null || true
 
 # Copy .env file with backend configuration
 cp .env "$DEB_DIR/usr/share/$APP_NAME/" 2>/dev/null || cp .env.example "$DEB_DIR/usr/share/$APP_NAME/.env" 2>/dev/null || true
@@ -285,7 +283,7 @@ Name=LF11A Project Frontend
 Comment=$APP_DESCRIPTION
 Exec=$APP_NAME
 Icon=$APP_NAME
-Categories=Office;Database;GTK;
+Categories=Office;Database;
 Terminal=false
 EOF
 
@@ -296,10 +294,10 @@ Version: ${APP_VERSION}
 Section: utils
 Priority: optional
 Architecture: amd64
-Depends: libgtk-4-1 (>= 4.0.0)
+Depends: libgl1, libxcb1, libxkbcommon0
 Maintainer: $AUTHOR
 Description: $APP_DESCRIPTION
- A modern GTK4-based personnel management application
+ A modern egui-based personnel management application
  built with Rust for managing employees, departments,
  and salary grades.
 EOF
@@ -320,9 +318,8 @@ mkdir -p "$RPM_BUILD_DIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 # Create tarball for sources
 TARBALL="$RPM_BUILD_DIR/SOURCES/${APP_NAME}-${APP_VERSION}.tar.gz"
 mkdir -p "/tmp/${APP_NAME}-${APP_VERSION}"
-cp target/release/lf11a_project_frontend "/tmp/${APP_NAME}-${APP_VERSION}/"
+cp "target/release/$BINARY_NAME" "/tmp/${APP_NAME}-${APP_VERSION}/"
 [ -f "$BUILD_DIR/icon.png" ] && cp "$BUILD_DIR/icon.png" "/tmp/${APP_NAME}-${APP_VERSION}/"
-cp assets/style.css "/tmp/${APP_NAME}-${APP_VERSION}/" 2>/dev/null || true
 tar -czf "$TARBALL" -C /tmp "${APP_NAME}-${APP_VERSION}"
 rm -rf "/tmp/${APP_NAME}-${APP_VERSION}"
 
@@ -339,11 +336,10 @@ License:        MIT
 URL:            https://github.com/KyokoSpl/lf11a_project_frontend
 Source0:        %{name}-%{version}.tar.gz
 
-BuildRequires:  gtk4-devel
-Requires:       gtk4
+Requires:       mesa-libGL, libxcb, libxkbcommon
 
 %description
-A modern GTK4-based personnel management application built with Rust
+A modern egui-based personnel management application built with Rust
 for managing employees, departments, and salary grades.
 
 %prep
@@ -355,9 +351,8 @@ mkdir -p %{buildroot}%{_datadir}/applications
 mkdir -p %{buildroot}%{_datadir}/icons/hicolor/512x512/apps
 mkdir -p %{buildroot}%{_datadir}/%{name}
 
-install -m 755 lf11a_project_frontend %{buildroot}%{_bindir}/%{name}
+install -m 755 lf11a_project_frontend_egui %{buildroot}%{_bindir}/%{name}
 install -m 644 icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/%{name}.png || true
-install -m 644 style.css %{buildroot}%{_datadir}/%{name}/style.css || true
 install -m 644 .env %{buildroot}%{_datadir}/%{name}/.env 2>/dev/null || install -m 644 .env.example %{buildroot}%{_datadir}/%{name}/.env 2>/dev/null || true
 
 cat > %{buildroot}%{_datadir}/applications/%{name}.desktop << DESKTOP
@@ -368,7 +363,7 @@ Name=LF11A Project Frontend
 Comment=Personnel Management Application
 Exec=%{name}
 Icon=%{name}
-Categories=Office;Database;GTK;
+Categories=Office;Database;
 Terminal=false
 DESKTOP
 
@@ -376,7 +371,6 @@ DESKTOP
 %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/512x512/apps/%{name}.png
-%{_datadir}/%{name}/style.css
 %{_datadir}/%{name}/.env
 
 %changelog
@@ -411,7 +405,7 @@ pkgdesc="LF11A Project Frontend - Personnel Management Application"
 arch=('x86_64')
 url="https://github.com/KyokoSpl/lf11a_project_frontend"
 license=('MIT')
-depends=('gtk4')
+depends=('libgl' 'libxcb' 'libxkbcommon')
 makedepends=('rust' 'cargo')
 source=("$pkgname-$pkgver.tar.gz")
 sha256sums=('SKIP')
@@ -424,9 +418,8 @@ build() {
 package() {
     cd "$srcdir/$pkgname-$pkgver"
     
-    install -Dm755 "target/release/lf11a_project_frontend" "$pkgdir/usr/bin/$pkgname"
+    install -Dm755 "target/release/lf11a_project_frontend_egui" "$pkgdir/usr/bin/$pkgname"
     install -Dm644 "icon.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/$pkgname.png"
-    install -Dm644 "style.css" "$pkgdir/usr/share/$pkgname/style.css"
     
     install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/$pkgname.desktop" << DESKTOP
 [Desktop Entry]
@@ -436,7 +429,7 @@ Name=LF11A Project Frontend
 Comment=Personnel Management Application
 Exec=$pkgname
 Icon=$pkgname
-Categories=Office;Database;GTK;
+Categories=Office;Database;
 Terminal=false
 DESKTOP
 }
@@ -453,11 +446,10 @@ mkdir -p "$APPIMAGE_DIR/usr/share/applications"
 mkdir -p "$APPIMAGE_DIR/usr/share/icons/hicolor/512x512/apps"
 mkdir -p "$APPIMAGE_DIR/usr/share/$APP_NAME"
 
-cp target/release/lf11a_project_frontend "$APPIMAGE_DIR/usr/bin/$APP_NAME"
+cp "target/release/$BINARY_NAME" "$APPIMAGE_DIR/usr/bin/$APP_NAME"
 chmod +x "$APPIMAGE_DIR/usr/bin/$APP_NAME"
 
 # Copy resources
-cp assets/style.css "$APPIMAGE_DIR/usr/share/$APP_NAME/" 2>/dev/null || true
 cp .env "$APPIMAGE_DIR/usr/share/$APP_NAME/" 2>/dev/null || cp .env.example "$APPIMAGE_DIR/usr/share/$APP_NAME/.env" 2>/dev/null || true
 
 if [ -f "$BUILD_DIR/icon.png" ]; then
@@ -473,7 +465,7 @@ Name=LF11A Project Frontend
 Comment=$APP_DESCRIPTION
 Exec=$APP_NAME
 Icon=$APP_NAME
-Categories=Office;Database;GTK;
+Categories=Office;Database;
 Terminal=false
 EOF
 
@@ -532,73 +524,13 @@ if ! command -v x86_64-w64-mingw32-gcc &> /dev/null; then
     exit 0  # Continue with summary
 fi
 
-# Setup GTK4 Windows libraries if needed
-GTK_WIN_DIR="$PROJECT_ROOT/gtk4-windows"
-if [ ! -d "$GTK_WIN_DIR" ] || [ ! -f "$GTK_WIN_DIR/.setup_complete" ]; then
-    echo -e "${YELLOW}GTK4 Windows libraries not found. Setting up...${NC}"
-    if [ -f "$PROJECT_ROOT/scripts/setup_gtk4_windows.sh" ]; then
-        bash "$PROJECT_ROOT/scripts/setup_gtk4_windows.sh" || {
-            echo -e "${RED}✗ Failed to setup GTK4 Windows libraries. Skipping Windows build.${NC}"
-            echo -e "${YELLOW}See docs/WINDOWS_BUILD.md for alternative build methods.${NC}"
-            exit 0
-        }
-    else
-        echo -e "${RED}✗ setup_gtk4_windows.sh not found. Skipping Windows build.${NC}"
-        echo -e "${YELLOW}Run: ./scripts/setup_gtk4_windows.sh${NC}"
-        exit 0
-    fi
-fi
-
-# Source GTK4 environment
-echo -e "${YELLOW}Loading GTK4 Windows environment...${NC}"
-if [ -f "$GTK_WIN_DIR/gtk4-env.sh" ]; then
-    source "$GTK_WIN_DIR/gtk4-env.sh"
-else
-    echo -e "${RED}✗ GTK4 environment file not found. Skipping Windows build.${NC}"
-    exit 0
-fi
-
 echo -e "${YELLOW}Building for Windows (x86_64-pc-windows-gnu)...${NC}"
 if cargo build --release --target x86_64-pc-windows-gnu 2>&1; then
     WIN_DIR="$BUILD_DIR/windows"
     mkdir -p "$WIN_DIR"
     
-    cp "target/x86_64-pc-windows-gnu/release/lf11a_project_frontend.exe" "$WIN_DIR/${APP_NAME}.exe"
-    cp assets/style.css "$WIN_DIR/" 2>/dev/null || true
+    cp "target/x86_64-pc-windows-gnu/release/${BINARY_NAME}.exe" "$WIN_DIR/${APP_NAME}.exe"
     cp .env "$WIN_DIR/" 2>/dev/null || cp .env.example "$WIN_DIR/.env" 2>/dev/null || true
-    
-    # Copy GTK4 DLLs and dependencies
-    echo -e "${YELLOW}Copying GTK4 DLLs and dependencies...${NC}"
-    if [ -d "$GTK_WIN_DIR/bin" ]; then
-        # Copy all DLL files (excluding .pdb debug files)
-        cp "$GTK_WIN_DIR/bin/"*.dll "$WIN_DIR/" 2>/dev/null || true
-        echo -e "${GREEN}✓ Copied GTK4 runtime DLLs${NC}"
-        
-        # Verify critical DLLs are present
-        CRITICAL_DLLS=("gdk_pixbuf-2.0-0.dll" "cairo-2.dll" "gio-2.0-0.dll" "glib-2.0-0.dll" "gtk-4-1.dll")
-        MISSING_DLLS=()
-        for dll in "${CRITICAL_DLLS[@]}"; do
-            if [ ! -f "$WIN_DIR/$dll" ]; then
-                MISSING_DLLS+=("$dll")
-            fi
-        done
-        
-        if [ ${#MISSING_DLLS[@]} -gt 0 ]; then
-            echo -e "${RED}✗ Missing critical DLLs: ${MISSING_DLLS[*]}${NC}"
-            echo -e "${YELLOW}Check GTK4 Windows installation${NC}"
-        else
-            echo -e "${GREEN}✓ All critical DLLs present${NC}"
-        fi
-    fi
-    
-    # Copy GTK4 data files (themes, icons, etc.)
-    if [ -d "$GTK_WIN_DIR/share" ]; then
-        mkdir -p "$WIN_DIR/share"
-        cp -r "$GTK_WIN_DIR/share/glib-2.0" "$WIN_DIR/share/" 2>/dev/null || true
-        cp -r "$GTK_WIN_DIR/share/icons" "$WIN_DIR/share/" 2>/dev/null || true
-        cp -r "$GTK_WIN_DIR/share/themes" "$WIN_DIR/share/" 2>/dev/null || true
-        echo -e "${GREEN}✓ Copied GTK4 data files${NC}"
-    fi
     
     # Convert icon to ICO if possible
     if [ -f "$BUILD_DIR/icon.png" ]; then
@@ -613,12 +545,11 @@ if cargo build --release --target x86_64-pc-windows-gnu 2>&1; then
 LF11A Project Frontend - Windows Installation
 
 Requirements:
-- GTK4 runtime for Windows
+- Windows 10/11 with OpenGL support
 
 Installation:
-1. Install GTK4 from: https://www.gtk.org/docs/installations/windows
-2. Copy .env.example to .env and configure your API settings
-3. Run lf11a-project-frontend.exe
+1. Copy .env.example to .env and configure your API settings
+2. Run lf11a-project-frontend.exe
 
 Configuration:
 Edit the .env file to configure:
@@ -673,18 +604,10 @@ Section "MainSection" SEC01
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
     File "lf11a-project-frontend.exe"
-    File "style.css"
     File ".env"
     File "README.txt"
     File /nonfatal "icon.png"
     File /nonfatal "icon.ico"
-    
-    ; Install all GTK4 DLLs
-    File "*.dll"
-    
-    ; Install GTK4 data files
-    SetOutPath "$INSTDIR\share"
-    File /r /x "*.pdb" "share\*.*"
 SectionEnd
 
 Section -AdditionalIcons
@@ -716,17 +639,12 @@ SectionEnd
 Section Uninstall
     ${INSTALL_TYPE}
     Delete "$INSTDIR\${MAIN_APP_EXE}"
-    Delete "$INSTDIR\style.css"
     Delete "$INSTDIR\.env.example"
     Delete "$INSTDIR\.env"
     Delete "$INSTDIR\README.txt"
     Delete "$INSTDIR\icon.png"
     Delete "$INSTDIR\icon.ico"
-    Delete "$INSTDIR\*.dll"
     Delete "$INSTDIR\uninstall.exe"
-    
-    ; Remove GTK4 data files
-    RMDir /r "$INSTDIR\share"
     
     ; Remove shortcuts
     Delete "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk"
