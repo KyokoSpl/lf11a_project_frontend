@@ -5,7 +5,7 @@
 
 use eframe::egui;
 use egui::{IconData, Rounding, Shadow};
-use std::sync::{Arc, LockResult};
+use std::sync::Arc;
 
 mod api;
 mod config;
