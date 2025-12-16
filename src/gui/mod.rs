@@ -2,19 +2,26 @@
 //!
 //! This module contains all the UI-related code organized into submodules:
 //! - `colors`: Material 3 color palette
-//! - `components`: Reusable UI components (buttons, cards)
+//! - `components`: Reusable UI components (buttons, cards, dropdowns)
+//! - `dialogs`: Dialog type definitions (ConfirmAction, EditDialog)
+//! - `dialog_handlers`: Dialog handling logic (confirmations, action execution)
+//! - `forms`: Form UI components for create/edit dialogs
 //! - `views`: Tab views (departments, employees, salary_grades)
 //! - `app`: Main application struct and eframe::App implementation
 
 pub mod app;
 pub mod colors;
 pub mod components;
+pub mod dialog_handlers;
+pub mod dialogs;
+pub mod forms;
 pub mod views;
 
 // Re-export commonly used types
 pub use app::PersonnelApp;
 pub use colors::Material3Colors;
 pub use components::{material_button, styled_dropdown};
+pub use dialogs::{ConfirmAction, EditDialog};
 
 /// The tab navigation enum
 #[derive(Debug, PartialEq, Clone, Copy)]

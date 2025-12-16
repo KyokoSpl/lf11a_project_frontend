@@ -5,7 +5,7 @@
 
 use eframe::egui;
 use egui::{IconData, Rounding, Shadow};
-use std::sync::Arc;
+use std::sync::{Arc, LockResult};
 
 mod api;
 mod config;
@@ -21,7 +21,6 @@ use gui::PersonnelApp;
 fn load_icon() -> Option<IconData> {
     // Include the SVG file at compile time
     let svg_data = include_bytes!("../assets/icon.svg");
-
     // Parse SVG using resvg
     let options = resvg::usvg::Options::default();
     let tree = resvg::usvg::Tree::from_data(svg_data, &options).ok()?;

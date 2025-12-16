@@ -1,8 +1,7 @@
 //! Salary Grades view for the Salary Grades tab
 
 use crate::api::models::*;
-use crate::gui::app::{ConfirmAction, EditDialog, PersonnelApp};
-use crate::gui::{material_button, Material3Colors};
+use crate::gui::{material_button, ConfirmAction, EditDialog, Material3Colors, PersonnelApp};
 use egui::{Button, Color32, Frame, Margin, RichText, Rounding, Stroke, Ui, Vec2};
 
 impl PersonnelApp {
